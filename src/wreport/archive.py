@@ -65,7 +65,7 @@ def render_daily(entry: Entry, cfg: Optional[Dict] = None) -> str:
 
     for key in ("done", "todo", "", "notes"):
         items = by_section.get(key, [])
-        prose = entry.sections.get(key, []) if key else []
+        prose = entry.sections.get(key, [])
         if not items and not prose:
             continue
         out.append("## %s" % SECTION_TITLES[key])
@@ -74,7 +74,10 @@ def render_daily(entry: Entry, cfg: Optional[Dict] = None) -> str:
             if it.is_group:
                 out.append("- **%s**" % it.text)
             else:
-                out.append(render_item(it, indent=1 if it.level == 1 else 0))
+                # Anything that belongs to a project is nested under it, however it was
+                # numbered in the source (numbered items under a bare project label are
+                # still level 0 in the input).
+                out.append(render_item(it, indent=1 if (it.level == 1 or it.project) else 0))
         for line in prose:
             out.append("- %s" % line)
         out.append("")

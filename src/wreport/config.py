@@ -19,6 +19,11 @@ DEFAULTS: Dict[str, Any] = {
     "week_start": "monday",
     "language": "zh",
     "reports_dir": "reports",
+    # Status given to a line that carries no marker, sits under no section, and
+    # contains no outcome word. Stays "unknown" unless the author explicitly opts in:
+    # the default must never invent a status. Set it to "done" if your reports are
+    # plain lists of what you finished today.
+    "unmarked_status": "unknown",
     "auto_commit": False,
     "llm": {
         # Polish is optional and off by default: the deterministic path must always

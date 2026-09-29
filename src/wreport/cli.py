@@ -65,6 +65,10 @@ def cmd_init(args) -> int:
             "每周起始日", ["monday", "sunday"], cfg.get("week_start", "monday"))
         cfg["language"] = render.prompt_select(
             "报告语言", ["zh", "en"], cfg.get("language", "zh"))
+        cfg["unmarked_status"] = render.prompt_select(
+            "未标注条目的默认状态（无标记 / 无栏目 / 无结果词时）",
+            ["unknown", "done", "doing", "todo"],
+            cfg.get("unmarked_status", "unknown"))
         enable = render.prompt_confirm(
             "启用 LLM 润色（可选，失败会自动回落到确定性输出）",
             bool(cfg["llm"].get("enabled")))
@@ -105,12 +109,13 @@ def cmd_daily_add(args) -> int:
         render.err("没有收到任何内容")
         return 2
 
-    entry = parser.parse_report(text, date=date, source=args.source)
+    entry = parser.parse_report(text, date=date, source=args.source,
+                                unmarked=cfg.get("unmarked_status", models.UNKNOWN))
     counts = archive.status_counts(entry)
 
     render.head("解析结果 · %s" % date)
     for it in entry.items:
-        pad = "  " * it.level
+        pad = "  " if (it.level == 1 or it.project) else ""
         if it.is_group:
             # structural header: no status to show
             render.out("%s- [bold]%s[/bold]  [dim](分组)[/dim]" % (pad, it.text))
@@ -137,6 +142,58 @@ def cmd_daily_add(args) -> int:
                ("原文", "已随档案保存")])
     if args.json:
         print(json.dumps(entry.to_dict(), ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_daily_reparse(args) -> int:
+    """Re-apply the current parsing rules to every stored report.
+
+    Safe by construction: reports are re-parsed from their stored verbatim `raw_text`,
+    never from a previous *interpretation* of it. `archived_at` is carried over rather
+    than re-derived, so provenance is not rewritten.
+    """
+    root = _root()
+    cfg = config.load_config()
+    entries = _load()
+    if not entries:
+        render.warn("没有已归档的日报")
+        return 0
+
+    unmarked = cfg.get("unmarked_status", models.UNKNOWN)
+    fresh: List[models.Entry] = []
+    diffs: List[tuple] = []
+    for old in entries:
+        new = parser.parse_report(old.raw_text, date=old.date, source=old.source,
+                                  unmarked=unmarked)
+        new.archived_at = old.archived_at
+        before = {i.text: i.status for i in old.items}
+        for it in new.items:
+            if it.text in before and before[it.text] != it.status:
+                diffs.append((old.date, it.text, before[it.text], it.status))
+        fresh.append(new)
+
+    if diffs:
+        render.head("解析结果变化 %d 处" % len(diffs))
+        for date, text, b, a in diffs:
+            render.out("  %s  %s  %s → %s" % (date, text[:40],
+                                              models.status_emoji(b),
+                                              models.status_emoji(a)))
+    else:
+        render.info("解析结果无变化")
+
+    if not args.yes:
+        if not render.prompt_confirm("用新解析结果重写 %d 份日报？" % len(fresh), True):
+            render.warn("已取消")
+            return 1
+
+    store.save_entries(fresh)
+    store.rebuild_index(fresh)
+    for e in fresh:
+        archive.write_daily(e, root, cfg)
+    render.ok("已重解析并重写 %d 份日报归档" % len(fresh))
+    if args.json:
+        print(json.dumps([{"date": d, "text": t, "before": b, "after": a}
+                          for d, t, b, a in diffs], ensure_ascii=False, indent=2))
     return 0
 
 
@@ -435,6 +492,11 @@ def build_parser() -> argparse.ArgumentParser:
     dl.add_argument("--week", help="只看某个 ISO 周，如 2026-W39")
     dl.add_argument("--json", action="store_true", help="输出 JSON")
     dl.set_defaults(func=cmd_daily_list)
+
+    dr = dsub.add_parser("reparse", help="按当前解析规则重新解析所有日报（依据逐字原文）")
+    dr.add_argument("--yes", "-y", action="store_true", help="不确认，直接重写")
+    dr.add_argument("--json", action="store_true", help="输出 JSON")
+    dr.set_defaults(func=cmd_daily_reparse)
 
     ds = dsub.add_parser("show", help="显示某天日报")
     ds.add_argument("date", help="YYYY-MM-DD")

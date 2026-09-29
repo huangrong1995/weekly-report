@@ -1,16 +1,27 @@
 """Turn a free-text daily report into structured items.
 
-Rules are deliberately explicit and testable -- no heuristics that "feel" right:
+Two invariants drive everything here:
 
-* Section headings (今日完成 / 明日计划 / …) set the **default status** for the lines
-  beneath them. That is the whole reason a bare 「服务器部署上线」 lines up under 完成.
-* A parenthesised marker the author wrote (「（调试中）」) **overrides** the section
-  default -- it is an explicit statement and must win.
-* Status is never derived from an item being *missing* from a later report. That kind
-  of cross-day inference is deliberately out of scope; this tool behaves like an
-  ordinary tracker where status is written down.
-* Inline verbs ("上线") only matter when there is no section to speak for the line,
-  so 「明日计划：上线新版本」 is not misread as finished.
+1. **No line is silently dropped.** Every non-empty line either becomes an item, a
+   section heading, a project label, or is kept as prose. Losing a line because it did
+   not match a pattern is the one failure mode an archive must never have.
+2. **Status is read, never guessed.** Precedence is: a marker the author bracketed >
+   the default of the section they put the line under > an unambiguous outcome word in
+   the line itself > the configured fallback for unmarked lines > unknown.
+
+Status is never derived from an item being *missing* from a later report: that kind of
+cross-day inference is deliberately out of scope, so the tool behaves like an ordinary
+tracker where status is written down.
+
+Reports arrive in more than one shape, all supported:
+
+    今日完成                    代码门禁
+    1. 甲事项                   1. 甲事项
+    a. 子事项                   EMV自动化流水线
+                                1. 乙事项
+
+-- i.e. a bracketed status marker, a section heading, or a bare label line acting as a
+project grouping.
 """
 
 from __future__ import annotations
@@ -33,6 +44,9 @@ _SECTION_KEYS = {
     "notes": ("问题与思考", "问题与反思", "心得", "反思", "本周小结", "小结", "备注"),
 }
 
+_SECTION_DEFAULT_STATUS = {"done": models.DONE, "todo": models.TODO,
+                           "notes": models.UNKNOWN}
+
 # «1.» «1、» «一、»  -> top level
 _TOP_RE = re.compile(r"^\s{0,3}(?:\d{1,2}\s*[.、)．]|[一二三四五六七八九十]{1,2}\s*[、.．)])\s*(.+)$")
 # «a.» «a)» «-» «*» «•»  -> nested level
@@ -45,7 +59,8 @@ _SUB_FLUSH_RE = re.compile(r"^\s{0,3}(?:[a-z]\s*[.、)．]|[-*•·])\s*(.+)$")
 #    loosely -- 「（调试）」 means what it says.
 _MARKER_RULES: List[Tuple[str, Tuple[str, ...]]] = [
     (models.BLOCKED, ("受阻", "阻塞", "卡住", "卡点", "被依赖", "等待外部", "blocked")),
-    (models.TODO, ("未开始", "待开始", "待启动", "待办", "排队", "未启动", "还没", "todo", "pending")),
+    (models.TODO, ("未开始", "待开始", "待启动", "待办", "排队", "未启动", "还没",
+                   "搁置", "暂缓", "todo", "pending")),
     (models.DOING, ("调试中", "进行中", "开发中", "修复中", "联调中", "优化中", "处理中",
                     "测试中", "推进中", "在做", "调试", "联调", "wip", "doing")),
     (models.DONE, ("已完成", "完成", "已上线", "上线", "已发布", "已交付", "已修复",
@@ -57,7 +72,7 @@ _MARKER_RULES: List[Tuple[str, Tuple[str, ...]]] = [
 #    「添加调试日志」 is a task being done, not a task in progress.
 _INLINE_RULES: List[Tuple[str, Tuple[str, ...]]] = [
     (models.BLOCKED, ("受阻", "阻塞", "卡住", "卡点")),
-    (models.TODO, ("未开始", "待开始", "待启动", "待办", "未启动")),
+    (models.TODO, ("未开始", "待开始", "待启动", "待办", "未启动", "搁置", "暂缓")),
     (models.DOING, ("进行中", "开发中", "修复中", "优化中", "处理中", "测试中", "推进中")),
     (models.DONE, ("已完成", "完成", "已上线", "上线", "已发布", "已交付", "已修复",
                    "已提交", "已合入", "结项")),
@@ -75,6 +90,9 @@ _HEADING_DECOR = re.compile(
     r"(?:\*\*|__)?\s*(.+?)\s*(?:\*\*|__)?\s*[:：]?\s*$")
 
 _MAX_HEADING = 16
+_MAX_PROJECT_LABEL = 32
+
+_SENTENCE_PUNCT = "。！？；!?;"
 
 
 def _status_from_text(text: str) -> Tuple[str, str]:
@@ -88,8 +106,19 @@ def _status_from_text(text: str) -> Tuple[str, str]:
     return models.UNKNOWN, ""
 
 
+def _ends_with_progressive(text: str) -> bool:
+    """「定位并修复部分问题中」 -- a trailing 中 marks work still going on.
+
+    Deliberately narrow: the character must be *final* (after punctuation is stripped),
+    which is what separates the progress suffix from 中 as an ordinary character
+    (「支持中文」 does not end with it).
+    """
+    body = text.rstrip("。.,，;； ")
+    return len(body) >= 3 and body.endswith("中")
+
+
 def _status_from_inline(text: str) -> str:
-    """Last-resort status when no section and no marker speaks for the line.
+    """Status from a word inside the line, when nothing more explicit exists.
 
     Uses the stricter `_INLINE_RULES`: matching a word inside a sentence says much less
     than a word the author deliberately bracketed.
@@ -98,6 +127,8 @@ def _status_from_inline(text: str) -> str:
         for k in keys:
             if k in text:
                 return status
+    if _ends_with_progressive(text):
+        return models.DOING
     return models.UNKNOWN
 
 
@@ -122,11 +153,36 @@ def _match_section(line: str) -> Optional[Tuple[str, str]]:
     return None
 
 
-def parse_report(text: str, date: Optional[str] = None,
-                 source: str = "manual") -> Entry:
+def _is_bullet(line: str) -> bool:
+    return bool(_TOP_RE.match(line) or _SUB_RE.match(line) or _SUB_FLUSH_RE.match(line))
+
+
+def _looks_like_project_label(line: str, next_line: str) -> bool:
+    """A bare, short line that introduces bulleted items is a project grouping label.
+
+    Requiring the *next* line to be a bullet is what keeps a stray bare sentence from
+    being promoted to a heading.
+    """
+    body = line.strip()
+    if not body or len(body) > _MAX_PROJECT_LABEL:
+        return False
+    if any(ch in body for ch in _SENTENCE_PUNCT):
+        return False
+    if _match_section(line):
+        return False
+    if _is_bullet(line):
+        return False
+    return _is_bullet(next_line)
+
+
+def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
+                 unmarked: str = models.UNKNOWN) -> Entry:
     """Parse a daily report into an Entry.
 
     `date` defaults to today (local). `text` is preserved verbatim on the Entry.
+    `unmarked` is the status to fall back to when nothing at all indicates one -- it is
+    `unknown` unless the caller explicitly configures otherwise, so the default never
+    invents a status.
     """
     raw = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     if date:
@@ -138,34 +194,47 @@ def parse_report(text: str, date: Optional[str] = None,
                   source=source,
                   archived_at=_dt.datetime.now().replace(microsecond=0).isoformat())
 
+    lines = [l for l in raw.split("\n") if l.strip()]
+
     section: Optional[str] = None
     section_status = models.UNKNOWN
-    current_project = ""
-    last_top_idx: Optional[int] = None
-    top_has_child: set = set()
+    bare_project = ""      # text of an open bare-label project, "" when none
+    current_project = ""   # what a nested line inherits
+    cand_idx: Optional[int] = None   # top-level line that becomes a group if it gets children
     order = 0
 
-    for line in raw.split("\n"):
-        if not line.strip():
-            continue
+    for i, line in enumerate(lines):
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
 
         hit = _match_section(line)
         if hit:
             section = hit[0]
-            section_status = {"done": models.DONE,
-                              "todo": models.TODO,
-                              "notes": models.UNKNOWN}[section]
+            section_status = _SECTION_DEFAULT_STATUS[section]
+            bare_project = ""
             current_project = ""
-            last_top_idx = None
+            cand_idx = None
             continue
 
         top = _TOP_RE.match(line)
         sub = None if top else (_SUB_RE.match(line) or _SUB_FLUSH_RE.match(line))
+
+        # --- bare line: a project label, or prose -----------------------------
         if top is None and sub is None:
-            # prose: belongs to whatever section is open
-            if section:
-                entry.sections.setdefault(section, []).append(line.strip())
+            if _looks_like_project_label(line, nxt):
+                order += 1
+                label = line.strip().rstrip(":：")
+                entry.items.append(Item(text=label, status=models.UNKNOWN, level=0,
+                                        project="", section=section or "", order=order,
+                                        is_group=True))
+                bare_project = label
+                current_project = label
+                cand_idx = None
+                continue
+            # prose is kept, never dropped
+            key = section if section else ""
+            entry.sections.setdefault(key, []).append(line.strip())
             continue
+
         if section == "notes":
             entry.sections.setdefault("notes", []).append(line.strip())
             continue
@@ -178,32 +247,34 @@ def parse_report(text: str, date: Optional[str] = None,
 
         status, raw_marker = _status_from_text(body)
         if not raw_marker:
-            status = section_status if section_status != models.UNKNOWN \
-                else _status_from_inline(body)
+            if section_status != models.UNKNOWN:
+                status = section_status
+            else:
+                status = _status_from_inline(body)
+                if status == models.UNKNOWN:
+                    status = unmarked
 
         clean = _MARKER_RE.sub("", body).strip().rstrip("。.,，;；")
         level = 0 if top is not None else 1
-        project = current_project if level == 1 else ""
+
+        if level == 1:
+            project = current_project
+        elif bare_project:
+            project = bare_project          # numbered item inside a labelled project
+        else:
+            project = ""
+            current_project = clean
+            cand_idx = len(entry.items)      # may become a group if children follow
 
         order += 1
-        item = Item(text=clean, status=status, raw_status=raw_marker,
-                    level=level, project=project, order=order,
-                    section=section or "")
-        entry.items.append(item)
+        entry.items.append(Item(text=clean, status=status, raw_status=raw_marker,
+                                level=level, project=project, order=order,
+                                section=section or ""))
 
-        if level == 0:
-            current_project = clean
-            last_top_idx = len(entry.items) - 1
-        elif last_top_idx is not None:
-            top_has_child.add(last_top_idx)
-
-    # A top-level line that introduced children states no work of its own. It must also
-    # carry NO status: otherwise it inherits the section default and a group header
-    # renders as "✅ 完成", which reads as if the whole group were finished.
-    for idx in top_has_child:
-        group = entry.items[idx]
-        group.is_group = True
-        group.status = models.UNKNOWN
+        if level == 1 and cand_idx is not None:
+            entry.items[cand_idx].is_group = True
+            entry.items[cand_idx].status = models.UNKNOWN
+            cand_idx = None
 
     return entry
 

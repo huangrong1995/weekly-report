@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-29T09:44:33",
+  "updated_at": "2026-09-29T16:53:41",
   "entries": [
     {
       "date": "2026-09-21",
@@ -227,6 +227,80 @@
       },
       "source": "feishu",
       "archived_at": "2026-09-29T09:44:33"
+    },
+    {
+      "date": "2026-09-29",
+      "week": "2026-W40",
+      "raw_text": "代码门禁\n1. 语言Jenkins Code Review分级评分功能，目前插件不支持分级评分，暂且搁置\n2. 代码检视报告md转html功能优化，优化模板显示效果\n3. 流水线集成 Change-Pilot 变更点提炼功能\nEMV自动化流水线\n1. 定位并修复部分问题中\n",
+      "items": [
+        {
+          "text": "代码门禁",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": true,
+          "order": 1
+        },
+        {
+          "text": "语言Jenkins Code Review分级评分功能，目前插件不支持分级评分，暂且搁置",
+          "status": "todo",
+          "raw_status": "",
+          "level": 0,
+          "project": "代码门禁",
+          "section": "",
+          "is_group": false,
+          "order": 2
+        },
+        {
+          "text": "代码检视报告md转html功能优化，优化模板显示效果",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "代码门禁",
+          "section": "",
+          "is_group": false,
+          "order": 3
+        },
+        {
+          "text": "流水线集成 Change-Pilot 变更点提炼功能",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "代码门禁",
+          "section": "",
+          "is_group": false,
+          "order": 4
+        },
+        {
+          "text": "EMV自动化流水线",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": true,
+          "order": 5
+        },
+        {
+          "text": "定位并修复部分问题中",
+          "status": "doing",
+          "raw_status": "",
+          "level": 0,
+          "project": "EMV自动化流水线",
+          "section": "",
+          "is_group": false,
+          "order": 6
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-09-29T16:53:13"
     }
   ]
 }
