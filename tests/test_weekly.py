@@ -99,6 +99,13 @@ class TestBuild(unittest.TestCase):
         md = weekly.build_weekly([], "2026-W39")
         self.assertIn("_（无）_", md)
 
+    def test_regeneration_is_byte_identical(self):
+        """输出不含生成时间；同样输入必须得到同样字节，否则每次重生成都会产生 git 差异。"""
+        a = weekly.build_weekly(week_entries(), "2026-W39", owner="测试")
+        b = weekly.build_weekly(week_entries(), "2026-W39", owner="测试")
+        self.assertEqual(a, b)
+        self.assertNotIn("生成时间", a)
+
 
 class TestTemplate(unittest.TestCase):
     def _root_with(self, content):

@@ -9,12 +9,15 @@ shows its full per-day history so nothing is hidden.
 
 Coverage is reported honestly: days of the week with no daily report are listed in the
 header and in the summary, rather than being silently treated as empty.
+
+Output is **byte-for-byte deterministic** for a given (entries, week, config): no
+generation timestamp is embedded, so regenerating an unchanged week produces no diff
+and the file is safe to keep under version control.
 """
 
 from __future__ import annotations
 
 import dataclasses
-import datetime as _dt
 import os
 from typing import Dict, List, Optional, Tuple
 
@@ -144,9 +147,8 @@ def build_weekly(entries: List[Entry], week: str, cfg: Optional[Dict] = None,
         out.append("")
         out.append("**汇报人**：%s" % owner)
     out.append("")
-    out.append("> 生成时间：%s ｜ 数据来源：%d 份日报（%s）"
-               % (_dt.datetime.now().replace(microsecond=0).isoformat(),
-                  len(entries), _fmt_days(cov["covered"]) or "无"))
+    out.append("> 数据来源：%d 份日报（%s）"
+               % (len(entries), _fmt_days(cov["covered"]) or "无"))
     if cov["missing"]:
         out.append(">")
         out.append("> ⚠️ **未覆盖日期**：%s（该期间无日报记录，本报告不含其内容）"
