@@ -39,15 +39,28 @@ _TOP_RE = re.compile(r"^\s{0,3}(?:\d{1,2}\s*[.、)．]|[一二三四五六七八
 _SUB_RE = re.compile(r"^\s+(?:[a-z]\s*[.、)．]|[-*•·])\s*(.+)$")
 _SUB_FLUSH_RE = re.compile(r"^\s{0,3}(?:[a-z]\s*[.、)．]|[-*•·])\s*(.+)$")
 
-# Status markers, in matching order. First hit wins, so put the more specific
-# patterns (「未开始」) ahead of the looser ones (「开始」, 「完成」).
-_STATUS_RULES: List[Tuple[str, Tuple[str, ...]]] = [
+# Two word lists, deliberately different.
+
+# 1) A marker the author wrote in brackets is an explicit statement, so it may match
+#    loosely -- 「（调试）」 means what it says.
+_MARKER_RULES: List[Tuple[str, Tuple[str, ...]]] = [
     (models.BLOCKED, ("受阻", "阻塞", "卡住", "卡点", "被依赖", "等待外部", "blocked")),
-    (models.TODO, ("未开始", "待开始", "待启动", "待办", "排队", "未启动", "todo", "pending")),
+    (models.TODO, ("未开始", "待开始", "待启动", "待办", "排队", "未启动", "还没", "todo", "pending")),
     (models.DOING, ("调试中", "进行中", "开发中", "修复中", "联调中", "优化中", "处理中",
                     "测试中", "推进中", "在做", "调试", "联调", "wip", "doing")),
     (models.DONE, ("已完成", "完成", "已上线", "上线", "已发布", "已交付", "已修复",
                    "已提交", "已合入", "结项", "done", "finished", "completed")),
+]
+
+# 2) Guessing a status from a word *inside the sentence* is far more error-prone, so it
+#    only accepts unambiguous wording. Notably the bare nouns 「调试」「联调」 are gone:
+#    「添加调试日志」 is a task being done, not a task in progress.
+_INLINE_RULES: List[Tuple[str, Tuple[str, ...]]] = [
+    (models.BLOCKED, ("受阻", "阻塞", "卡住", "卡点")),
+    (models.TODO, ("未开始", "待开始", "待启动", "待办", "未启动")),
+    (models.DOING, ("进行中", "开发中", "修复中", "优化中", "处理中", "测试中", "推进中")),
+    (models.DONE, ("已完成", "完成", "已上线", "上线", "已发布", "已交付", "已修复",
+                   "已提交", "已合入", "结项")),
 ]
 
 # Annotation markers get stripped from the text: 「（调试中）」 is an annotation,
@@ -68,7 +81,7 @@ def _status_from_text(text: str) -> Tuple[str, str]:
     """Return (status, raw_marker) based on an explicit marker in the line."""
     for m in _MARKER_RE.finditer(text):
         inner = m.group(1).strip()
-        for status, keys in _STATUS_RULES:
+        for status, keys in _MARKER_RULES:
             for k in keys:
                 if k in inner:
                     return status, inner
@@ -76,8 +89,12 @@ def _status_from_text(text: str) -> Tuple[str, str]:
 
 
 def _status_from_inline(text: str) -> str:
-    """Last-resort status when no section and no marker speaks for the line."""
-    for status, keys in _STATUS_RULES:
+    """Last-resort status when no section and no marker speaks for the line.
+
+    Uses the stricter `_INLINE_RULES`: matching a word inside a sentence says much less
+    than a word the author deliberately bracketed.
+    """
+    for status, keys in _INLINE_RULES:
         for k in keys:
             if k in text:
                 return status

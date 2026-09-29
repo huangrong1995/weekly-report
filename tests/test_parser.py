@@ -41,6 +41,22 @@ class TestSectionDefaults(unittest.TestCase):
         e = parser.parse_report("1. 服务器部署上线\n", date="2026-09-23")
         self.assertEqual(models.DONE, e.items[0].status)
 
+    def test_bare_noun_is_not_a_status(self):
+        """「添加调试日志」里的「调试」是名词；行内回退不能把它读成进行中。"""
+        e = parser.parse_report("1. 添加调试日志，定位EMV相关问题\n", date="2026-09-28")
+        self.assertEqual(models.UNKNOWN, e.items[0].status)
+
+    def test_bracketed_loose_wording_still_matches(self):
+        """作者写进括号的注解仍按宽松词表匹配. """
+        e = parser.parse_report("1. 某事项（调试）\n", date="2026-09-28")
+        self.assertEqual(models.DOING, e.items[0].status)
+        self.assertEqual("调试", e.items[0].raw_status)
+
+    def test_inline_completion_word_still_works(self):
+        e = parser.parse_report("1. 完成md转html功能，可以直接在网页查看报告\n",
+                                date="2026-09-28")
+        self.assertEqual(models.DONE, e.items[0].status)
+
     def test_inline_verb_does_not_apply_when_a_section_speaks(self):
         """同一句话在「今日完成」与「明日计划」下，结论必须不同。"""
         under_done = parser.parse_report("今日完成\n1. 上线新版本\n", date="2026-09-23")

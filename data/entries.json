@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-29T09:36:42",
+  "updated_at": "2026-09-29T09:44:33",
   "entries": [
     {
       "date": "2026-09-21",
@@ -173,6 +173,60 @@
       },
       "source": "feishu",
       "archived_at": "2026-09-29T09:36:42"
+    },
+    {
+      "date": "2026-09-28",
+      "week": "2026-W40",
+      "raw_text": "1. 代码门禁\na. 完成md转html功能，可以直接在网页查看AI Code Review生成的检查报告\n2. EMV流水线问题定位\na. 添加调试日志，定位EMV相关问题\n",
+      "items": [
+        {
+          "text": "代码门禁",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": true,
+          "order": 1
+        },
+        {
+          "text": "完成md转html功能，可以直接在网页查看AI Code Review生成的检查报告",
+          "status": "done",
+          "raw_status": "",
+          "level": 1,
+          "project": "代码门禁",
+          "section": "",
+          "is_group": false,
+          "order": 2
+        },
+        {
+          "text": "EMV流水线问题定位",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": true,
+          "order": 3
+        },
+        {
+          "text": "添加调试日志，定位EMV相关问题",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 1,
+          "project": "EMV流水线问题定位",
+          "section": "",
+          "is_group": false,
+          "order": 4
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-09-29T09:44:33"
     }
   ]
 }
