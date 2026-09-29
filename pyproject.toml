@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wreport"
+version = "0.1.0"
+description = "Archive daily reports and generate weekly reports from them."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+# No hard dependencies on purpose: the deterministic path is stdlib-only.
+# rich / questionary are optional and only improve the terminal experience.
+dependencies = []
+
+[project.optional-dependencies]
+tty = ["rich>=13", "questionary>=2"]
+
+[project.scripts]
+wreport = "wreport.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

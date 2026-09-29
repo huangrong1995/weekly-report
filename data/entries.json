@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "updated_at": "2026-09-29T09:36:42",
+  "entries": [
+    {
+      "date": "2026-09-21",
+      "week": "2026-W39",
+      "raw_text": "今日完成\n1. Change-Pilot变更单提取工具修改几个需求\na. 版本变更信息前置\nb. 保留变更类型及模块（调试中）\nc. 备注信息保留（未开始）\n2. 代码门禁\na. AI Code Review全量上线，开放所有仓库扫描\n",
+      "items": [
+        {
+          "text": "Change-Pilot变更单提取工具修改几个需求",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "done",
+          "is_group": true,
+          "order": 1
+        },
+        {
+          "text": "版本变更信息前置",
+          "status": "done",
+          "raw_status": "",
+          "level": 1,
+          "project": "Change-Pilot变更单提取工具修改几个需求",
+          "section": "done",
+          "is_group": false,
+          "order": 2
+        },
+        {
+          "text": "保留变更类型及模块",
+          "status": "doing",
+          "raw_status": "调试中",
+          "level": 1,
+          "project": "Change-Pilot变更单提取工具修改几个需求",
+          "section": "done",
+          "is_group": false,
+          "order": 3
+        },
+        {
+          "text": "备注信息保留",
+          "status": "todo",
+          "raw_status": "未开始",
+          "level": 1,
+          "project": "Change-Pilot变更单提取工具修改几个需求",
+          "section": "done",
+          "is_group": false,
+          "order": 4
+        },
+        {
+          "text": "代码门禁",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "done",
+          "is_group": true,
+          "order": 5
+        },
+        {
+          "text": "AI Code Review全量上线，开放所有仓库扫描",
+          "status": "done",
+          "raw_status": "",
+          "level": 1,
+          "project": "代码门禁",
+          "section": "done",
+          "is_group": false,
+          "order": 6
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-09-29T09:36:42"
+    },
+    {
+      "date": "2026-09-22",
+      "week": "2026-W39",
+      "raw_text": "今日完成\n1. Change-Pilot变更单提取工具修改几个需求\na. 备注信息保留（调试中）\n2. 代码门禁\na. AI Code Review部署服务器上线\n",
+      "items": [
+        {
+          "text": "Change-Pilot变更单提取工具修改几个需求",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "done",
+          "is_group": true,
+          "order": 1
+        },
+        {
+          "text": "备注信息保留",
+          "status": "doing",
+          "raw_status": "调试中",
+          "level": 1,
+          "project": "Change-Pilot变更单提取工具修改几个需求",
+          "section": "done",
+          "is_group": false,
+          "order": 2
+        },
+        {
+          "text": "代码门禁",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "done",
+          "is_group": true,
+          "order": 3
+        },
+        {
+          "text": "AI Code Review部署服务器上线",
+          "status": "done",
+          "raw_status": "",
+          "level": 1,
+          "project": "代码门禁",
+          "section": "done",
+          "is_group": false,
+          "order": 4
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-09-29T09:36:42"
+    },
+    {
+      "date": "2026-09-23",
+      "week": "2026-W39",
+      "raw_text": "今日完成\n1. Change-Pilot变更单提取工具服务器部署上线\n2. 代码门禁\na. AI Code Review问题修复\n",
+      "items": [
+        {
+          "text": "Change-Pilot变更单提取工具服务器部署上线",
+          "status": "done",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "done",
+          "is_group": false,
+          "order": 1
+        },
+        {
+          "text": "代码门禁",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "done",
+          "is_group": true,
+          "order": 2
+        },
+        {
+          "text": "AI Code Review问题修复",
+          "status": "done",
+          "raw_status": "",
+          "level": 1,
+          "project": "代码门禁",
+          "section": "done",
+          "is_group": false,
+          "order": 3
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-09-29T09:36:42"
+    }
+  ]
+}
