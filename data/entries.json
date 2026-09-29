@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-29T16:53:41",
+  "updated_at": "2026-09-29T16:56:46",
   "entries": [
     {
       "date": "2026-09-21",
@@ -231,7 +231,7 @@
     {
       "date": "2026-09-29",
       "week": "2026-W40",
-      "raw_text": "代码门禁\n1. 语言Jenkins Code Review分级评分功能，目前插件不支持分级评分，暂且搁置\n2. 代码检视报告md转html功能优化，优化模板显示效果\n3. 流水线集成 Change-Pilot 变更点提炼功能\nEMV自动化流水线\n1. 定位并修复部分问题中\n",
+      "raw_text": "代码门禁\n1. 语言Jenkins Code Review分级评分功能，目前插件不支持分级评分，暂且搁置\n2. :CheckMark:代码检视报告md转html功能优化，优化模板显示效果\n3. :CheckMark:流水线集成 Change-Pilot 变更点提炼功能\nEMV自动化流水线\n1. 定位并修复部分问题中\n",
       "items": [
         {
           "text": "代码门禁",
@@ -255,8 +255,8 @@
         },
         {
           "text": "代码检视报告md转html功能优化，优化模板显示效果",
-          "status": "unknown",
-          "raw_status": "",
+          "status": "done",
+          "raw_status": "CheckMark",
           "level": 0,
           "project": "代码门禁",
           "section": "",
@@ -265,8 +265,8 @@
         },
         {
           "text": "流水线集成 Change-Pilot 变更点提炼功能",
-          "status": "unknown",
-          "raw_status": "",
+          "status": "done",
+          "raw_status": "CheckMark",
           "level": 0,
           "project": "代码门禁",
           "section": "",
@@ -300,7 +300,7 @@
         "notes": []
       },
       "source": "feishu",
-      "archived_at": "2026-09-29T16:53:13"
+      "archived_at": "2026-09-29T16:56:46"
     }
   ]
 }

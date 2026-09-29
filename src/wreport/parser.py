@@ -82,6 +82,23 @@ _INLINE_RULES: List[Tuple[str, Tuple[str, ...]]] = [
 # whereas a verb inside the sentence is part of the sentence.
 _MARKER_RE = re.compile(r"[（(【\[]\s*([^）)】\]]{1,12})\s*[）)】\]]")
 
+# Feishu (and Slack-style) emoji shortcodes survive a copy-paste, so a report routinely
+# arrives as 「:CheckMark:某事项」. They are status markers like any bracketed one.
+_EMOJI_RE = re.compile(r":([A-Za-z][A-Za-z0-9_+'-]{1,24}):")
+
+_SHORTCODE_RULES: List[Tuple[str, Tuple[str, ...]]] = [
+    (models.BLOCKED, ("noentry", "blocked", "warning", "stop", "exclamation")),
+    (models.TODO, ("clock", "alarmclock", "alarm", "todo", "pending", "hours", "soon")),
+    (models.DOING, ("hourglass", "hourglassflowing", "loading", "hammerandwrench",
+                    "wrench", "gear", "inprogress", "doing", "run")),
+    (models.DONE, ("checkmark", "whitecheckmark", "heavycheckmark", "check", "tick",
+                   "done", "donesolid", "ok", "yes", "thumbsup", "+1")),
+]
+
+
+def _norm_shortcode(name: str) -> str:
+    return re.sub(r"[^a-z0-9+]", "", name.lower())
+
 # Strip the decoration a heading may carry: markdown ###, bold, and a leading
 # enumerator (1. / 1、/ 一、).
 _HEADING_DECOR = re.compile(
@@ -95,6 +112,28 @@ _MAX_PROJECT_LABEL = 32
 _SENTENCE_PUNCT = "。！？；!?;"
 
 
+def _status_from_shortcode(text: str) -> Tuple[str, str]:
+    """Recognise a Feishu/Slack-style emoji shortcode as a status marker."""
+    for m in _EMOJI_RE.finditer(text):
+        name = _norm_shortcode(m.group(1))
+        for status, keys in _SHORTCODE_RULES:
+            if name in keys:
+                return status, m.group(1)
+    return models.UNKNOWN, ""
+
+
+def _strip_recognised_shortcodes(text: str) -> str:
+    """Drop only the shortcodes we understood -- an unrecognised :token: is left alone
+    rather than silently removed from the author's sentence."""
+    def repl(m):
+        name = _norm_shortcode(m.group(1))
+        for _status, keys in _SHORTCODE_RULES:
+            if name in keys:
+                return ""
+        return m.group(0)
+    return _EMOJI_RE.sub(repl, text)
+
+
 def _status_from_text(text: str) -> Tuple[str, str]:
     """Return (status, raw_marker) based on an explicit marker in the line."""
     for m in _MARKER_RE.finditer(text):
@@ -103,7 +142,7 @@ def _status_from_text(text: str) -> Tuple[str, str]:
             for k in keys:
                 if k in inner:
                     return status, inner
-    return models.UNKNOWN, ""
+    return _status_from_shortcode(text)
 
 
 def _ends_with_progressive(text: str) -> bool:
@@ -254,7 +293,8 @@ def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
                 if status == models.UNKNOWN:
                     status = unmarked
 
-        clean = _MARKER_RE.sub("", body).strip().rstrip("。.,，;；")
+        clean = _strip_recognised_shortcodes(_MARKER_RE.sub("", body)).strip()
+        clean = clean.rstrip("。.,，;；")
         level = 0 if top is not None else 1
 
         if level == 1:

@@ -33,6 +33,15 @@ b. 乙事项
 1. 丙事项
 """
 
+# The same 09-29 report re-sent with Feishu emoji shortcodes marking items 2 and 3 done.
+D29_CHECKED = """代码门禁
+1. 语言Jenkins Code Review分级评分功能，目前插件不支持分级评分，暂且搁置
+2. :CheckMark:代码检视报告md转html功能优化，优化模板显示效果
+3. :CheckMark:流水线集成 Change-Pilot 变更点提炼功能
+EMV自动化流水线
+1. 定位并修复部分问题中
+"""
+
 
 class TestBareLabelProjects(unittest.TestCase):
     def setUp(self):
@@ -134,6 +143,53 @@ class TestStatusVocabulary(unittest.TestCase):
         """「支持中文」不以中结尾，不能被当成进行中。"""
         e = parser.parse_report("1. 支持中文显示\n", date="2026-09-29")
         self.assertEqual(models.UNKNOWN, e.items[0].status)
+
+
+class TestEmojiShortcodes(unittest.TestCase):
+    """飞书复制出来的文本会把表情变成短代码，这是最常见的标记形式之一。"""
+
+    def test_checkmark_is_done(self):
+        e = parser.parse_report("1. :CheckMark:某事项\n", date="2026-09-29")
+        self.assertEqual(models.DONE, e.items[0].status)
+        self.assertEqual("CheckMark", e.items[0].raw_status)
+
+    def test_shortcode_is_removed_from_the_text(self):
+        e = parser.parse_report("1. :CheckMark:某事项\n", date="2026-09-29")
+        self.assertEqual("某事项", e.items[0].text)
+
+    def test_case_and_separator_insensitive(self):
+        for token in (":CheckMark:", ":checkmark:", ":CHECK_MARK:", ":white_check_mark:"):
+            e = parser.parse_report("1. %s某事项\n" % token, date="2026-09-29")
+            self.assertEqual(models.DONE, e.items[0].status, token)
+
+    def test_other_statuses_recognised(self):
+        cases = {":Hourglass:": models.DOING, ":Clock:": models.TODO,
+                 ":NoEntry:": models.BLOCKED}
+        for token, expect in cases.items():
+            e = parser.parse_report("1. %s某事项\n" % token, date="2026-09-29")
+            self.assertEqual(expect, e.items[0].status, token)
+
+    def test_unknown_shortcode_is_left_in_the_text(self):
+        """看不懂的短代码不能从作者的句子里悄悄删掉。"""
+        e = parser.parse_report("1. :SomeUnknownThing:某事项\n", date="2026-09-29")
+        self.assertIn(":SomeUnknownThing:", e.items[0].text)
+
+    def test_port_number_is_not_a_shortcode(self):
+        e = parser.parse_report("1. 服务跑在 localhost:8080:端口\n", date="2026-09-29")
+        self.assertEqual(models.UNKNOWN, e.items[0].status)
+
+    def test_explicit_bracket_beats_shortcode(self):
+        e = parser.parse_report("1. :CheckMark:某事项（未开始）\n", date="2026-09-29")
+        self.assertEqual(models.TODO, e.items[0].status)
+
+    def test_shortcode_in_a_real_report(self):
+        e = parser.parse_report(D29_CHECKED, date="2026-09-29")
+        rows = {i.text: i.status for i in e.items}
+        self.assertEqual(models.DONE, rows["代码检视报告md转html功能优化，优化模板显示效果"])
+        self.assertEqual(models.DONE, rows["流水线集成 Change-Pilot 变更点提炼功能"])
+        self.assertEqual(models.TODO,
+                         rows["语言Jenkins Code Review分级评分功能，目前插件不支持分级评分，暂且搁置"])
+        self.assertEqual(models.DOING, rows["定位并修复部分问题中"])
 
 
 class TestUnmarkedFallback(unittest.TestCase):
