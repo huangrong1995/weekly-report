@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-29T16:56:46",
+  "updated_at": "2026-09-30T17:07:05",
   "entries": [
     {
       "date": "2026-09-21",
@@ -301,6 +301,60 @@
       },
       "source": "feishu",
       "archived_at": "2026-09-29T16:56:46"
+    },
+    {
+      "date": "2026-09-30",
+      "week": "2026-W40",
+      "raw_text": "代码门禁\n1. GateView新增柱状图看板（完成）\nEMV流水线问题\n1. 修复部分异常\n",
+      "items": [
+        {
+          "text": "代码门禁",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": true,
+          "order": 1
+        },
+        {
+          "text": "GateView新增柱状图看板",
+          "status": "done",
+          "raw_status": "完成",
+          "level": 0,
+          "project": "代码门禁",
+          "section": "",
+          "is_group": false,
+          "order": 2
+        },
+        {
+          "text": "EMV流水线问题",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": true,
+          "order": 3
+        },
+        {
+          "text": "修复部分异常",
+          "status": "unknown",
+          "raw_status": "",
+          "level": 0,
+          "project": "EMV流水线问题",
+          "section": "",
+          "is_group": false,
+          "order": 4
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-09-30T17:07:05"
     }
   ]
 }
