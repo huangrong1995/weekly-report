@@ -21,15 +21,20 @@ from typing import Any, Dict, List, Optional
 # stays consistent with how ordinary issue trackers work.
 
 DONE = "done"
+# 验证中 is its own stage, not a flavour of 进行中. The user writes 「验证中」 side by side
+# with 「进行中」 in the same report, so collapsing them discards a distinction the author
+# deliberately made -- and the trailing-中 heuristic would have done exactly that.
+VERIFYING = "verifying"
 DOING = "doing"
 TODO = "todo"
 BLOCKED = "blocked"
 UNKNOWN = "unknown"
 
-STATUS_ORDER = [DONE, DOING, TODO, BLOCKED, UNKNOWN]
+STATUS_ORDER = [DONE, VERIFYING, DOING, TODO, BLOCKED, UNKNOWN]
 
 STATUS_META: Dict[str, Dict[str, str]] = {
     DONE: {"emoji": "✅", "label": "完成"},
+    VERIFYING: {"emoji": "🔍", "label": "验证中"},
     DOING: {"emoji": "🔧", "label": "进行中"},
     TODO: {"emoji": "⏸️", "label": "未开始"},
     BLOCKED: {"emoji": "🚧", "label": "受阻"},

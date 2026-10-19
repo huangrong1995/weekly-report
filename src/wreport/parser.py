@@ -61,8 +61,10 @@ _MARKER_RULES: List[Tuple[str, Tuple[str, ...]]] = [
     (models.BLOCKED, ("受阻", "阻塞", "卡住", "卡点", "被依赖", "等待外部", "blocked")),
     (models.TODO, ("未开始", "待开始", "待启动", "待办", "排队", "未启动", "还没",
                    "搁置", "暂缓", "todo", "pending")),
+    # Checked BEFORE doing: 「验证中」 must not fall through to the trailing-中 rule.
+    (models.VERIFYING, ("验证中", "验证", "待验证", "待测", "测试中", "test")),
     (models.DOING, ("调试中", "进行中", "开发中", "修复中", "联调中", "优化中", "处理中",
-                    "测试中", "推进中", "在做", "调试", "联调", "wip", "doing")),
+                    "推进中", "在做", "调试", "联调", "wip", "doing")),
     (models.DONE, ("已完成", "完成", "已上线", "上线", "已发布", "已交付", "已修复",
                    "已提交", "已合入", "结项", "done", "finished", "completed")),
 ]
@@ -73,7 +75,10 @@ _MARKER_RULES: List[Tuple[str, Tuple[str, ...]]] = [
 _INLINE_RULES: List[Tuple[str, Tuple[str, ...]]] = [
     (models.BLOCKED, ("受阻", "阻塞", "卡住", "卡点")),
     (models.TODO, ("未开始", "待开始", "待启动", "待办", "未启动", "搁置", "暂缓")),
-    (models.DOING, ("进行中", "开发中", "修复中", "优化中", "处理中", "测试中", "推进中")),
+    # Bare 「验证」 stays out of the inline list: it is far too common as an ordinary verb
+    # (「验证接口是否正确」). Only the unambiguous phrasings are accepted mid-sentence.
+    (models.VERIFYING, ("验证中", "待验证", "待测", "测试中")),
+    (models.DOING, ("进行中", "开发中", "修复中", "优化中", "处理中", "推进中")),
     (models.DONE, ("已完成", "完成", "已上线", "上线", "已发布", "已交付", "已修复",
                    "已提交", "已合入", "结项")),
 ]

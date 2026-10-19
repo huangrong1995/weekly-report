@@ -5,6 +5,7 @@ stopping being written down. The last status the author actually wrote is what s
 """
 
 import os
+import re
 import sys
 import unittest
 
@@ -18,6 +19,22 @@ from wreport import models, parser, weekly  # noqa: E402
 def week_entries():
     return [parser.parse_report(fixtures.BY_DATE[d], date=d)
             for d in sorted(fixtures.BY_DATE)]
+
+
+def section(md: str, name: str) -> str:
+    """Body of a top-level weekly section, located by NAME.
+
+    Sections are numbered (一、二、……) and that numbering shifts every time a status is
+    added, so assertions must key off the name -- keying off the number makes the suite
+    break for a reason unrelated to the behaviour under test.
+    """
+    m = re.search(r"^## [^\n]*" + re.escape(name) + r"[^\n]*\n(.*?)(?=^## |\Z)",
+                  md, re.M | re.S)
+    return m.group(1) if m else ""
+
+
+def has_section(md: str, name: str) -> bool:
+    return re.search(r"^## [^\n]*" + re.escape(name), md, re.M) is not None
 
 
 class TestAggregate(unittest.TestCase):
@@ -74,9 +91,8 @@ class TestBuild(unittest.TestCase):
         self.md = weekly.build_weekly(week_entries(), "2026-W39", owner="测试")
 
     def test_has_all_sections(self):
-        for heading in ("## 一、本周完成", "## 二、进行中", "## 三、待推进",
-                        "## 四、下周计划", "## 五、本周小结"):
-            self.assertIn(heading, self.md)
+        for heading in ("本周完成", "验证中", "进行中", "待推进", "下周计划", "本周小结"):
+            self.assertTrue(has_section(self.md, heading), "缺少小节：%s" % heading)
 
     def test_header_names_the_week_and_owner(self):
         self.assertIn("2026 W39（09/21 – 09/27）", self.md)
@@ -91,8 +107,16 @@ class TestBuild(unittest.TestCase):
         self.assertIn("Change-Pilot变更单提取工具服务器部署上线", self.md)
 
     def test_incomplete_item_is_not_in_the_done_section(self):
-        done_part = self.md.split("## 二、进行中")[0]
-        self.assertNotIn("备注信息保留", done_part)
+        self.assertNotIn("备注信息保留", section(self.md, "本周完成"))
+
+    def test_verifying_items_land_in_their_own_section(self):
+        """验证中 必须与进行中分开，不能混在一节里。"""
+        e = parser.parse_report("1. 甲事项 —— 验证中\n2. 乙事项 —— 进行中\n",
+                                date="2026-09-21")
+        md = weekly.build_weekly([e], "2026-W39")
+        self.assertIn("甲事项", section(md, "验证中"))
+        self.assertNotIn("甲事项", section(md, "进行中"))
+        self.assertIn("乙事项", section(md, "进行中"))
 
     def test_empty_week_fails_loudly_at_cli_not_here(self):
         """build_weekly 本身只渲染；空数据应由 CLI 拦下。"""

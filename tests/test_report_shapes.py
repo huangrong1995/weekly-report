@@ -247,5 +247,38 @@ class TestReportTitle(unittest.TestCase):
         self.assertEqual([], [i.text for i in e.items if i.is_group])
 
 
+class TestVerifyingStatus(unittest.TestCase):
+    """「验证中」是独立阶段，不能被「行尾中」通用规则抹成进行中。"""
+
+    def test_verifying_beats_the_trailing_progressive_rule(self):
+        e = parser.parse_report("1. 代码提交变更信息检查功能导入 —— 验证中；\n",
+                                date="2026-10-19")
+        self.assertEqual(models.VERIFYING, e.items[0].status)
+
+    def test_verifying_and_doing_stay_distinct_in_one_report(self):
+        e = parser.parse_report(D19_TITLED, date="2026-10-19")
+        rows = {i.text: i.status for i in e.items}
+        self.assertEqual(models.VERIFYING, rows["代码提交变更信息检查功能导入 —— 验证中"])
+        self.assertEqual(models.DOING, rows["走读安全固件代码 —— 进行中"])
+
+    def test_testing_now_counts_as_verifying(self):
+        e = parser.parse_report("1. 甲事项（测试中）\n", date="2026-10-19")
+        self.assertEqual(models.VERIFYING, e.items[0].status)
+
+    def test_bare_verifying_verb_is_not_a_status(self):
+        """「验证接口是否正确」里的「验证」是动词，不能判状态。"""
+        e = parser.parse_report("1. 验证接口是否正确\n", date="2026-10-19")
+        self.assertEqual(models.UNKNOWN, e.items[0].status)
+
+    def test_generic_trailing_progressive_still_maps_to_doing(self):
+        """行尾「中」的通用规则仍在，不能被验证中抢走。"""
+        e = parser.parse_report("1. 定位并修复部分问题中\n", date="2026-10-19")
+        self.assertEqual(models.DOING, e.items[0].status)
+
+    def test_status_order_places_verifying_between_done_and_doing(self):
+        self.assertEqual([models.DONE, models.VERIFYING, models.DOING],
+                         models.STATUS_ORDER[:3])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

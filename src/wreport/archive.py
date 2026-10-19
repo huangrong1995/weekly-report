@@ -15,7 +15,7 @@ import datetime as _dt
 import os
 from typing import Dict, List, Optional
 
-from .models import Entry, Item, status_emoji, status_label
+from .models import STATUS_ORDER, Entry, Item, status_emoji, status_label
 from .weeks import week_label
 
 _WEEKDAY_ZH = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -122,6 +122,9 @@ def status_counts(entry: Entry) -> Dict[str, int]:
 
 
 def describe_counts(counts: Dict[str, int]) -> str:
-    parts = ["%s%s %d" % (status_emoji(k), status_label(k), v)
-             for k, v in counts.items() if v]
+    # Canonical status order, not encounter order: otherwise a day that happens to list
+    # 「验证中」 first renders its column differently from a day that lists it last.
+    order = [k for k in STATUS_ORDER if counts.get(k)]
+    order += [k for k in counts if k not in STATUS_ORDER and counts[k]]
+    parts = ["%s%s %d" % (status_emoji(k), status_label(k), counts[k]) for k in order]
     return " ｜ ".join(parts) if parts else "无条目"

@@ -17,7 +17,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     _RICH = False
 
-from .models import STATUS_META, status_emoji, status_label
+from .models import STATUS_META, STATUS_ORDER, status_emoji, status_label
 
 _console = _Console() if _RICH else None
 
@@ -73,7 +73,9 @@ def bar(counts: Dict[str, int], width: int = 24) -> str:
         return "_（无条目）_"
     top = max(counts.values()) or 1
     lines: List[str] = []
-    for key in ("done", "doing", "todo", "blocked", "unknown"):
+    # Driven by STATUS_ORDER, not a local tuple: a hand-copied list silently dropped any
+    # newly added status from the bar while the rest of the tool rendered it fine.
+    for key in STATUS_ORDER:
         n = counts.get(key, 0)
         if not n:
             continue

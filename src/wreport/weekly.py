@@ -21,7 +21,7 @@ import dataclasses
 import os
 from typing import Dict, List, Optional, Tuple
 
-from .models import (BLOCKED, DONE, DOING, Entry, TODO, UNKNOWN, status_emoji,
+from .models import (BLOCKED, DONE, DOING, Entry, TODO, UNKNOWN, VERIFYING, status_emoji,
                      status_label)
 from .weeks import week_bounds, week_dates, week_label
 
@@ -137,6 +137,7 @@ def build_weekly(entries: List[Entry], week: str, cfg: Optional[Dict] = None,
     multi = len({r.project for r in rows if r.project}) > 0
 
     done = _by_status(rows, (DONE,))
+    verifying = _by_status(rows, (VERIFYING,))
     doing = _by_status(rows, (DOING,))
     waiting = _by_status(rows, (TODO, BLOCKED))
     untagged = _by_status(rows, (UNKNOWN,))
@@ -160,12 +161,18 @@ def build_weekly(entries: List[Entry], week: str, cfg: Optional[Dict] = None,
     out.append(_render_grouped(done, multi))
     out.append("")
 
-    out.append("## 二、进行中 %s" % status_emoji(DOING))
+    # Always rendered, even when empty, so the section numbering stays stable week to week.
+    out.append("## 二、验证中 %s" % status_emoji(VERIFYING))
+    out.append("")
+    out.append(_render_grouped(verifying, multi))
+    out.append("")
+
+    out.append("## 三、进行中 %s" % status_emoji(DOING))
     out.append("")
     out.append(_render_grouped(doing, multi))
     out.append("")
 
-    out.append("## 三、待推进 %s" % "/".join([status_emoji(TODO), status_emoji(BLOCKED)]))
+    out.append("## 四、待推进 %s" % "/".join([status_emoji(TODO), status_emoji(BLOCKED)]))
     out.append("")
     out.append(_render_grouped(waiting, multi))
     out.append("")
@@ -182,7 +189,7 @@ def build_weekly(entries: List[Entry], week: str, cfg: Optional[Dict] = None,
         for it in e.items:
             if it.section == "todo" and it.text:
                 plans.append((e.date, it.text))
-    out.append("## 四、下周计划 📌")
+    out.append("## 五、下周计划 📌")
     out.append("")
     if plans:
         for date, text in plans:
@@ -191,14 +198,15 @@ def build_weekly(entries: List[Entry], week: str, cfg: Optional[Dict] = None,
         out.append("_（日报中未提供计划栏目）_")
     out.append("")
 
-    out.append("## 五、本周小结 🎯")
+    out.append("## 六、本周小结 🎯")
     out.append("")
     total = len(rows)
     projects = sorted({r.project for r in rows if r.project})
     out.append("- 覆盖 **%d** 天日报，涉及 **%d** 个事项、**%d** 个项目"
                % (len(cov["covered"]), total, len(projects)))
-    out.append("- 完成 %s%d ｜ 进行中 %s%d ｜ 待推进 %s%d"
+    out.append("- 完成 %s%d ｜ 验证中 %s%d ｜ 进行中 %s%d ｜ 待推进 %s%d"
                % (status_emoji(DONE), len([r for r in rows if r.status == DONE]),
+                  status_emoji(VERIFYING), len([r for r in rows if r.status == VERIFYING]),
                   status_emoji(DOING), len([r for r in rows if r.status == DOING]),
                   status_emoji(TODO), len([r for r in rows if r.status in (TODO, BLOCKED)])))
     if projects:

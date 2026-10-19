@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-19T17:12:42",
+  "updated_at": "2026-10-19T17:17:08",
   "entries": [
     {
       "date": "2026-09-21",
@@ -363,7 +363,7 @@
       "items": [
         {
           "text": "代码提交变更信息检查功能导入 —— 验证中",
-          "status": "doing",
+          "status": "verifying",
           "raw_status": "",
           "level": 0,
           "project": "",

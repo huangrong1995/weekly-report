@@ -35,7 +35,9 @@ DEFAULTS: Dict[str, Any] = {
         "api_key_env": "WREPORT_API_KEY",
         "timeout_s": 60,
     },
-    "weekly_sections": ["done", "doing", "todo", "plan", "summary"],
+    # Currently informational only (nothing reads it yet) — kept in sync with the sections
+    # build_weekly actually emits so wiring it up later can't silently miss one.
+    "weekly_sections": ["done", "verifying", "doing", "todo", "plan", "summary"],
 }
 
 
