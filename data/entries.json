@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-30T17:07:05",
+  "updated_at": "2026-10-19T17:12:42",
   "entries": [
     {
       "date": "2026-09-21",
@@ -355,6 +355,50 @@
       },
       "source": "feishu",
       "archived_at": "2026-09-30T17:07:05"
+    },
+    {
+      "date": "2026-10-19",
+      "week": "2026-W43",
+      "raw_text": "日报\n1. 代码提交变更信息检查功能导入 —— 验证中；\n2. N910 Pro导入HCE功能相关代码整理，已完成；\n3. 走读安全固件代码 —— 进行中；\n",
+      "items": [
+        {
+          "text": "代码提交变更信息检查功能导入 —— 验证中",
+          "status": "doing",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": false,
+          "order": 1
+        },
+        {
+          "text": "N910 Pro导入HCE功能相关代码整理，已完成",
+          "status": "done",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": false,
+          "order": 2
+        },
+        {
+          "text": "走读安全固件代码 —— 进行中",
+          "status": "doing",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": false,
+          "order": 3
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-10-19T17:12:42"
     }
   ]
 }

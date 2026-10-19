@@ -42,6 +42,13 @@ EMV自动化流水线
 1. 定位并修复部分问题中
 """
 
+# The 10-19 report as actually sent: a bare 「日报」 title line above the numbered items.
+D19_TITLED = """日报
+1. 代码提交变更信息检查功能导入 —— 验证中；
+2. N910 Pro导入HCE功能相关代码整理，已完成；
+3. 走读安全固件代码 —— 进行中；
+"""
+
 
 class TestBareLabelProjects(unittest.TestCase):
     def setUp(self):
@@ -212,6 +219,32 @@ class TestUnmarkedFallback(unittest.TestCase):
         e = parser.parse_report("今日完成\n1. 甲\n", date="2026-09-29",
                                 unmarked=models.TODO)
         self.assertEqual(models.DONE, e.items[0].status)
+
+
+class TestReportTitle(unittest.TestCase):
+    """报告自己的标题行（「日报」）不能变成项目分组。"""
+
+    def test_leading_title_does_not_become_a_group(self):
+        e = parser.parse_report(D19_TITLED, date="2026-10-19")
+        self.assertEqual([], [i.text for i in e.items if i.is_group])
+        self.assertEqual(3, len(e.items))
+
+    def test_title_line_survives_in_the_verbatim_record(self):
+        e = parser.parse_report(D19_TITLED, date="2026-10-19")
+        self.assertIn("日报", e.raw_text)
+
+    def test_items_are_not_nested_under_the_title(self):
+        e = parser.parse_report(D19_TITLED, date="2026-10-19")
+        self.assertEqual({""}, {i.project for i in e.items})
+
+    def test_a_project_named_like_a_title_survives_after_content(self):
+        """内容之后出现的「日报」是真项目名，不能被当成标题吃掉。"""
+        e = parser.parse_report("1. 甲事项\n日报\n1. 乙事项\n", date="2026-10-19")
+        self.assertEqual(["日报"], [i.text for i in e.items if i.is_group])
+
+    def test_weekly_title_also_suppressed(self):
+        e = parser.parse_report("周报\n1. 甲事项\n", date="2026-10-19")
+        self.assertEqual([], [i.text for i in e.items if i.is_group])
 
 
 if __name__ == "__main__":

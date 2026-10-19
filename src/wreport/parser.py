@@ -196,6 +196,22 @@ def _is_bullet(line: str) -> bool:
     return bool(_TOP_RE.match(line) or _SUB_RE.match(line) or _SUB_FLUSH_RE.match(line))
 
 
+# A line consisting solely of a report-type word is the document's own TITLE, not a project
+# label. Reports routinely open with 「日报」 / 「工作日报」 above the numbered items, and the
+# archive already renders a proper heading (「# 日报 · 2026-10-19（周五）」), so keeping this
+# line as a project made the whole report nest under a bogus group named 日报.
+_TITLE_WORDS = frozenset((
+    "日报", "周报", "月报", "年报",
+    "工作日报", "工作周报", "工作月报",
+    "今日日报", "本周周报", "今日工作日报",
+    "日报内容", "周报内容",
+))
+
+
+def _is_report_title(line: str) -> bool:
+    return line.strip().rstrip(":：").strip() in _TITLE_WORDS
+
+
 def _looks_like_project_label(line: str, next_line: str) -> bool:
     """A bare, short line that introduces bulleted items is a project grouping label.
 
@@ -259,6 +275,12 @@ def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
 
         # --- bare line: a project label, or prose -----------------------------
         if top is None and sub is None:
+            # A title only counts before any content: a project legitimately *named* 「日报」
+            # further down the report must stay a project label. `sections` is pre-seeded
+            # with empty done/todo/notes keys, so membership alone is not a signal.
+            if (not entry.items and not any(entry.sections.values())
+                    and _is_report_title(line)):
+                continue  # the verbatim appendix still carries this line
             if _looks_like_project_label(line, nxt):
                 order += 1
                 label = line.strip().rstrip(":：")

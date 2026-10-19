@@ -197,6 +197,42 @@ def cmd_daily_reparse(args) -> int:
     return 0
 
 
+def cmd_daily_remove(args) -> int:
+    """Delete one archived report — both the store entry and the markdown file.
+
+    Exists because a report can be filed under the wrong date (a typo, or an answer sent
+    days after the fact) and `daily add` only ever upserts: without this the only way back
+    was editing data/entries.json by hand.
+    """
+    date = parse_date(args.date).isoformat()
+    entries = _load()
+    entry = store.get_entry(entries, date)
+    if entry is None:
+        render.err("没有 %s 的日报" % date)
+        return 1
+
+    cfg = config.load_config()
+    root = _root()
+    path = archive.daily_path(root, entry, cfg)
+    counts = archive.status_counts(entry)
+    render.head("将删除 %s（%s）" % (date, archive.weekday_zh(date)))
+    render.out("  条目 %d 条 ｜ %s" % (sum(counts.values()), archive.describe_counts(counts)))
+    render.out("  归档文件 %s" % os.path.relpath(path, root))
+
+    if not args.yes:
+        if not render.prompt_confirm("确认删除？（含逐字原文，不可恢复）", False):
+            render.warn("已取消")
+            return 1
+
+    remaining = [e for e in entries if e.date != date]
+    store.save_entries(remaining)
+    store.rebuild_index(remaining)
+    if os.path.exists(path):
+        os.remove(path)
+    render.ok("已删除 %s 的日报（剩 %d 份）" % (date, len(remaining)))
+    return 0
+
+
 def cmd_daily_list(args) -> int:
     entries = _load()
     if args.week:
@@ -502,6 +538,11 @@ def build_parser() -> argparse.ArgumentParser:
     ds.add_argument("date", help="YYYY-MM-DD")
     ds.add_argument("--json", action="store_true", help="输出 JSON")
     ds.set_defaults(func=cmd_daily_show)
+
+    dx = dsub.add_parser("remove", help="删除某天的日报（日期填错时用）")
+    dx.add_argument("date", help="YYYY-MM-DD")
+    dx.add_argument("--yes", "-y", action="store_true", help="不确认，直接删除")
+    dx.set_defaults(func=cmd_daily_remove)
 
     w = sub.add_parser("weekly", help="周报生成")
     wsub = w.add_subparsers(dest="subcommand", metavar="<子命令>")
