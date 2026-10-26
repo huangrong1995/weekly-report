@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-19T17:17:08",
+  "updated_at": "2026-10-26T17:07:09",
   "entries": [
     {
       "date": "2026-09-21",
@@ -399,6 +399,50 @@
       },
       "source": "feishu",
       "archived_at": "2026-10-19T17:12:42"
+    },
+    {
+      "date": "2026-10-26",
+      "week": "2026-W44",
+      "raw_text": "2026-10-26\n今日完成\n1. N960K导入辅芯兼容喇叭和蜂鸣器功能，代码开发完成，完成喇叭部分自测验证，蜂鸣器部分等待设备验证；\n2. 辅芯系统参数部分代码学习；\n明日计划\n1. N910 Pro清楚系统异常状态；\n",
+      "items": [
+        {
+          "text": "N960K导入辅芯兼容喇叭和蜂鸣器功能，代码开发完成，完成喇叭部分自测验证，蜂鸣器部分等待设备验证",
+          "status": "done",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "done",
+          "is_group": false,
+          "order": 1
+        },
+        {
+          "text": "辅芯系统参数部分代码学习",
+          "status": "done",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "done",
+          "is_group": false,
+          "order": 2
+        },
+        {
+          "text": "N910 Pro清楚系统异常状态",
+          "status": "todo",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "todo",
+          "is_group": false,
+          "order": 3
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-10-26T17:07:09"
     }
   ]
 }

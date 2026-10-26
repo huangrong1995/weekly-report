@@ -217,6 +217,16 @@ def _is_report_title(line: str) -> bool:
     return line.strip().rstrip(":：").strip() in _TITLE_WORDS
 
 
+# A bare date line at the top of a report is its date header, not content. Without this it
+# lands as a stray paragraph under 「事项（原文未分栏目）」 while the archive heading already
+# carries the same date.
+_DATE_LINE_RE = re.compile(r"^\s*\d{4}\s*[-/年.]\s*\d{1,2}\s*[-/月.]\s*\d{1,2}\s*日?\s*$")
+
+
+def _is_report_date(line: str) -> bool:
+    return bool(_DATE_LINE_RE.match(line))
+
+
 def _looks_like_project_label(line: str, next_line: str) -> bool:
     """A bare, short line that introduces bulleted items is a project grouping label.
 
@@ -262,6 +272,11 @@ def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
     current_project = ""   # what a nested line inherits
     cand_idx: Optional[int] = None   # top-level line that becomes a group if it gets children
     order = 0
+    # The title block at the very top of a report (its 「日报」 heading and/or its date).
+    # Consumed lines leave this True, so a report may carry both; the first real content
+    # (item, section heading, or prose) closes it, and then a 「日报」/date line is content
+    # again -- a project may legitimately be *named* 日报 further down.
+    header_zone = True
 
     for i, line in enumerate(lines):
         nxt = lines[i + 1] if i + 1 < len(lines) else ""
@@ -273,6 +288,7 @@ def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
             bare_project = ""
             current_project = ""
             cand_idx = None
+            header_zone = False
             continue
 
         top = _TOP_RE.match(line)
@@ -280,12 +296,9 @@ def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
 
         # --- bare line: a project label, or prose -----------------------------
         if top is None and sub is None:
-            # A title only counts before any content: a project legitimately *named* 「日报」
-            # further down the report must stay a project label. `sections` is pre-seeded
-            # with empty done/todo/notes keys, so membership alone is not a signal.
-            if (not entry.items and not any(entry.sections.values())
-                    and _is_report_title(line)):
+            if header_zone and (_is_report_title(line) or _is_report_date(line)):
                 continue  # the verbatim appendix still carries this line
+            header_zone = False
             if _looks_like_project_label(line, nxt):
                 order += 1
                 label = line.strip().rstrip(":：")
@@ -300,6 +313,8 @@ def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
             key = section if section else ""
             entry.sections.setdefault(key, []).append(line.strip())
             continue
+
+        header_zone = False   # an item line closes the title block
 
         if section == "notes":
             entry.sections.setdefault("notes", []).append(line.strip())

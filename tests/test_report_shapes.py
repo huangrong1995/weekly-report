@@ -221,6 +221,16 @@ class TestUnmarkedFallback(unittest.TestCase):
         self.assertEqual(models.DONE, e.items[0].status)
 
 
+# The 10-26 report: it carries its own date as the first line, then 今日完成 / 明日计划.
+D26 = """2026-10-26
+今日完成
+1. N960K导入辅芯兼容喇叭和蜂鸣器功能，代码开发完成，完成喇叭部分自测验证，蜂鸣器部分等待设备验证；
+2. 辅芯系统参数部分代码学习；
+明日计划
+1. N910 Pro清楚系统异常状态；
+"""
+
+
 class TestReportTitle(unittest.TestCase):
     """报告自己的标题行（「日报」）不能变成项目分组。"""
 
@@ -245,6 +255,27 @@ class TestReportTitle(unittest.TestCase):
     def test_weekly_title_also_suppressed(self):
         e = parser.parse_report("周报\n1. 甲事项\n", date="2026-10-19")
         self.assertEqual([], [i.text for i in e.items if i.is_group])
+
+    def test_leading_date_line_is_not_content(self):
+        e = parser.parse_report(D26, date="2026-10-26")
+        self.assertEqual([], [v for v in e.sections.values() if v],
+                         "日期行不该落成散文")
+        self.assertEqual(3, len(e.items))
+
+    def test_date_forms_other_than_iso_are_recognised(self):
+        for head in ("2026/10/26", "2026年10月26日", "2026-10-26"):
+            e = parser.parse_report("%s\n1. 甲事项\n" % head, date="2026-10-26")
+            self.assertEqual([], [v for v in e.sections.values() if v], head)
+
+    def test_title_and_date_together_are_both_consumed(self):
+        e = parser.parse_report("日报\n2026-10-26\n今日完成\n1. 甲事项\n", date="2026-10-26")
+        self.assertEqual([], [v for v in e.sections.values() if v])
+        self.assertEqual(1, len(e.items))
+
+    def test_date_like_project_label_after_content_survives(self):
+        """内容之后出现的日期行是真项目名/内容，不能被吃掉。"""
+        e = parser.parse_report("1. 甲事项\n2026-10-26\n1. 乙事项\n", date="2026-10-26")
+        self.assertEqual(["2026-10-26"], [i.text for i in e.items if i.is_group])
 
 
 class TestVerifyingStatus(unittest.TestCase):
