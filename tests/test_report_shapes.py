@@ -278,6 +278,32 @@ class TestReportTitle(unittest.TestCase):
         self.assertEqual(["2026-10-26"], [i.text for i in e.items if i.is_group])
 
 
+class TestCorrections(unittest.TestCase):
+    """作者确认的笔误更正：只改渲染文本，逐字原文必须保持原样。"""
+
+    def test_correction_changes_rendered_text_only(self):
+        e = parser.parse_report(D26, date="2026-10-26", corrections=[["清楚", "清除"]])
+        row = [i for i in e.items if "系统异常状态" in i.text][0]
+        self.assertIn("清除", row.text)
+        self.assertNotIn("清楚", row.text)
+        self.assertIn("清楚", e.raw_text, "逐字原文必须保留实际收到的写法")
+
+    def test_without_corrections_the_text_is_untouched(self):
+        e = parser.parse_report(D26, date="2026-10-26")
+        row = [i for i in e.items if "系统异常状态" in i.text][0]
+        self.assertIn("清楚", row.text)
+
+    def test_correction_applies_to_prose_too(self):
+        e = parser.parse_report("2026-10-26\n1. 甲事项\n随便一句清楚\n",
+                                date="2026-10-26", corrections=[["清楚", "清除"]])
+        self.assertEqual(["随便一句清除"], e.sections.get("", []))
+
+    def test_empty_replacement_deletes_the_phrase(self):
+        e = parser.parse_report("1. 甲事项（旧）\n", date="2026-10-26",
+                                corrections=[["（旧）", ""]])
+        self.assertEqual("甲事项", e.items[0].text)
+
+
 class TestVerifyingStatus(unittest.TestCase):
     """「验证中」是独立阶段，不能被「行尾中」通用规则抹成进行中。"""
 

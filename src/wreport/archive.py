@@ -39,7 +39,8 @@ def render_item(item: Item, indent: int = 0) -> str:
     return "%s- %s %s" % (pad, emoji, item.text)
 
 
-def render_daily(entry: Entry, cfg: Optional[Dict] = None) -> str:
+def render_daily(entry: Entry, cfg: Optional[Dict] = None,
+                 corrections: Optional[List] = None) -> str:
     """Render an archive file.
 
     Deterministic: no archive timestamp is written, so re-importing an unchanged report
@@ -49,6 +50,10 @@ def render_daily(entry: Entry, cfg: Optional[Dict] = None) -> str:
     Section headings are only emitted for sections the author actually used. A report
     written without a 「今日完成」 heading is NOT given one: inventing a heading the
     author never wrote would misrepresent their input.
+
+    `corrections` are the author-authorised typo fixes already applied to the body; they are
+    announced here so that the verbatim appendix showing the *uncorrected* text reads as
+    intentional rather than as a tooling bug.
     """
     cfg = cfg or {}
     week = entry.week or ""
@@ -56,6 +61,11 @@ def render_daily(entry: Entry, cfg: Optional[Dict] = None) -> str:
     out.append("# 日报 · %s（%s）" % (entry.date, weekday_zh(entry.date)))
     out.append("")
     out.append("> ISO 周：%s ｜ 来源：%s" % (week, entry.source))
+    if corrections:
+        pairs = "、".join("%s → %s" % (p[0], p[1] if len(p) > 1 else "")
+                          for p in corrections if p)
+        out.append(">")
+        out.append("> ✏️ 已更正（作者确认）：%s —— 下方「逐字原文」保留实际收到的写法" % pairs)
     out.append("")
 
     # Group by the section the author actually wrote.
@@ -103,12 +113,13 @@ def daily_path(repo_root: str, entry: Entry, cfg: Optional[Dict] = None) -> str:
     return os.path.join(repo_root, sub, "daily", "%s.md" % entry.date)
 
 
-def write_daily(entry: Entry, repo_root: str, cfg: Optional[Dict] = None) -> str:
+def write_daily(entry: Entry, repo_root: str, cfg: Optional[Dict] = None,
+                corrections: Optional[List] = None) -> str:
     cfg = cfg or {}
     path = daily_path(repo_root, entry, cfg)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write(render_daily(entry, cfg))
+        fh.write(render_daily(entry, cfg, corrections))
     return path
 
 

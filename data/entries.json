@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-26T17:07:09",
+  "updated_at": "2026-10-26T17:12:35",
   "entries": [
     {
       "date": "2026-09-21",
@@ -426,7 +426,7 @@
           "order": 2
         },
         {
-          "text": "N910 Pro清楚系统异常状态",
+          "text": "N910 Pro清除系统异常状态",
           "status": "todo",
           "raw_status": "",
           "level": 0,

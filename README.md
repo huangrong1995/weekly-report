@@ -36,6 +36,9 @@ cd weekly-report
 | `daily add` | 录入日报：读 stdin，或 `--file` / `--text` / `--date` |
 | `daily list` | 列日报，可 `--week 2026-W39` |
 | `daily show DATE` | 显示某天归档后的日报 |
+| `daily reparse` | 按当前解析规则重新解析所有日报（依据逐字原文，安全） |
+| `daily remove DATE` | 删除某天的日报（日期填错时用） |
+| `daily correct DATE 原文 改为` | 记录作者确认的笔误更正并重写该天归档 |
 | `weekly build` | 生成周报：`--week` / `--date` / `--polish` / `--force` / `--stdout` |
 | `weekly list` | 列已有周报 |
 | `ledger` | 进展台账（跨周汇总，`--weeks N`） |
@@ -78,6 +81,20 @@ cd weekly-report
 
 选 `unmarked_status` 时只提供 `unknown / done / doing / todo` —— 「验证中」不适合当**默认值**，
 它只从作者写的词来。
+
+### 更正与笔误
+
+日报里的笔误（`清楚` 应为 `清除`）**改正文、留原文**：
+
+```bash
+./wreport daily correct 2026-10-26 清楚 清除
+```
+
+- 更正记录存在 `data/corrections.json`（`{"日期": [["原文", "改为"]]}`），**不是**手改归档文件
+- **只影响渲染出的正文**；`raw_text` 与「逐字原文」区块**永远保留实际收到的写法**
+- 归档头部会写明「✏️ 已更正（作者确认）：清楚 → 清除」，避免正文与逐字原文不一致被误读成工具出错
+- 更正会在 `daily reparse` 后**保持**（reparse 会重新套用）
+- 改为留空即删除该字样（如 `./wreport daily correct 2026-10-26 "（旧）" ""`）
 
 ### 这个工具**不做**什么
 

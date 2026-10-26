@@ -87,5 +87,21 @@ class TestCounts(unittest.TestCase):
         self.assertIn("2", s)
 
 
+class TestCorrections(unittest.TestCase):
+    """归档要主动说明更正，否则正文与逐字原文不一致会像工具出错。"""
+
+    def test_archive_announces_the_correction(self):
+        e = parser.parse_report(fixtures.BY_DATE["2026-09-21"], date="2026-09-21",
+                                corrections=[["门禁", "门禁系统"]])
+        md = archive.render_daily(e, {}, [["门禁", "门禁系统"]])
+        self.assertIn("已更正", md)
+        self.assertIn("门禁 → 门禁系统", md)
+        self.assertIn("逐字原文", md)
+
+    def test_no_corrections_no_note(self):
+        e = parser.parse_report(fixtures.BY_DATE["2026-09-21"], date="2026-09-21")
+        self.assertNotIn("已更正", archive.render_daily(e, {}))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

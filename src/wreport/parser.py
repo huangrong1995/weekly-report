@@ -245,14 +245,28 @@ def _looks_like_project_label(line: str, next_line: str) -> bool:
     return _is_bullet(next_line)
 
 
+def _apply_corrections(text: str, corrections) -> str:
+    """Apply typo fixes the author explicitly authorised (e.g. 清楚 -> 清除).
+
+    Applied to what gets RENDERED, never to `raw_text`: the verbatim appendix must keep
+    showing exactly what was sent, so a correction can never masquerade as the original.
+    """
+    for pair in corrections or ():
+        frm, to = (pair[0], pair[1]) if isinstance(pair, (list, tuple)) else (pair, "")
+        if frm:
+            text = text.replace(frm, to)
+    return text
+
+
 def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
-                 unmarked: str = models.UNKNOWN) -> Entry:
+                 unmarked: str = models.UNKNOWN, corrections=None) -> Entry:
     """Parse a daily report into an Entry.
 
     `date` defaults to today (local). `text` is preserved verbatim on the Entry.
     `unmarked` is the status to fall back to when nothing at all indicates one -- it is
     `unknown` unless the caller explicitly configures otherwise, so the default never
     invents a status.
+    `corrections` is a sequence of (from, to) string pairs applied to rendered text only.
     """
     raw = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     if date:
@@ -357,6 +371,12 @@ def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
             entry.items[cand_idx].is_group = True
             entry.items[cand_idx].status = models.UNKNOWN
             cand_idx = None
+
+    if corrections:
+        for it in entry.items:
+            it.text = _apply_corrections(it.text, corrections)
+        for key, prose in entry.sections.items():
+            entry.sections[key] = [_apply_corrections(p, corrections) for p in prose]
 
     return entry
 

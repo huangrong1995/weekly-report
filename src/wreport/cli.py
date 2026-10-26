@@ -110,7 +110,8 @@ def cmd_daily_add(args) -> int:
         return 2
 
     entry = parser.parse_report(text, date=date, source=args.source,
-                                unmarked=cfg.get("unmarked_status", models.UNKNOWN))
+                                unmarked=cfg.get("unmarked_status", models.UNKNOWN),
+                                corrections=store.load_corrections().get(date))
     counts = archive.status_counts(entry)
 
     render.head("解析结果 · %s" % date)
@@ -133,7 +134,8 @@ def cmd_daily_add(args) -> int:
     action = store.upsert_entry(entries, entry)
     store.save_entries(entries)
     store.rebuild_index(entries)
-    path = archive.write_daily(entry, root, cfg)
+    path = archive.write_daily(entry, root, cfg,
+                               store.load_corrections().get(entry.date))
 
     render.ok("日报 %s（%s）" % ("已更新" if action == "replaced" else "已归档",
                                 os.path.relpath(path, root)))
@@ -164,7 +166,8 @@ def cmd_daily_reparse(args) -> int:
     diffs: List[tuple] = []
     for old in entries:
         new = parser.parse_report(old.raw_text, date=old.date, source=old.source,
-                                  unmarked=unmarked)
+                                  unmarked=unmarked,
+                                  corrections=store.load_corrections().get(old.date))
         new.archived_at = old.archived_at
         before = {i.text: i.status for i in old.items}
         for it in new.items:
@@ -189,7 +192,7 @@ def cmd_daily_reparse(args) -> int:
     store.save_entries(fresh)
     store.rebuild_index(fresh)
     for e in fresh:
-        archive.write_daily(e, root, cfg)
+        archive.write_daily(e, root, cfg, store.load_corrections().get(e.date))
     render.ok("已重解析并重写 %d 份日报归档" % len(fresh))
     if args.json:
         print(json.dumps([{"date": d, "text": t, "before": b, "after": a}
@@ -233,6 +236,46 @@ def cmd_daily_remove(args) -> int:
     return 0
 
 
+def cmd_daily_correct(args) -> int:
+    """Record an author-confirmed typo fix for one date, then re-render that archive.
+
+    Corrections apply to *rendered* text only -- `raw_text` is never touched, so the
+    verbatim appendix keeps showing exactly what was submitted and the archive announces
+    the fix instead of silently disagreeing with itself.
+    """
+    date = parse_date(args.date).isoformat()
+    cfg = config.load_config()
+    entries = _load()
+    entry = store.get_entry(entries, date)
+    if entry is None:
+        render.err("没有 %s 的日报" % date)
+        return 1
+
+    corr = store.load_corrections()
+    pairs = [list(p) for p in corr.get(date, [])]
+    pair = [args.frm, args.to]
+    if pair in pairs:
+        render.info("该更正已存在，未重复添加")
+    else:
+        pairs.append(pair)
+        corr[date] = pairs
+        store.save_corrections(corr)
+        render.ok("已记录更正：%s → %s" % (args.frm, args.to))
+
+    fresh = parser.parse_report(entry.raw_text, date=entry.date, source=entry.source,
+                                unmarked=cfg.get("unmarked_status", models.UNKNOWN),
+                                corrections=corr.get(date))
+    fresh.archived_at = entry.archived_at
+    store.upsert_entry(entries, fresh)
+    store.save_entries(entries)
+    store.rebuild_index(entries)
+    path = archive.write_daily(fresh, _root(), cfg, corr.get(date))
+    render.ok("已重写 %s" % os.path.relpath(path, _root()))
+    render.out("  本页更正：%s" % "、".join("%s → %s" % (p[0], p[1]) for p in corr[date]))
+    render.out("  逐字原文保留实际收到的写法")
+    return 0
+
+
 def cmd_daily_list(args) -> int:
     entries = _load()
     if args.week:
@@ -261,7 +304,8 @@ def cmd_daily_show(args) -> int:
     if args.json:
         print(json.dumps(entry.to_dict(), ensure_ascii=False, indent=2))
     else:
-        render.out(archive.render_daily(entry, config.load_config()))
+        render.out(archive.render_daily(entry, config.load_config(),
+                                        store.load_corrections().get(date)))
     return 0
 
 
@@ -543,6 +587,12 @@ def build_parser() -> argparse.ArgumentParser:
     dx.add_argument("date", help="YYYY-MM-DD")
     dx.add_argument("--yes", "-y", action="store_true", help="不确认，直接删除")
     dx.set_defaults(func=cmd_daily_remove)
+
+    dc = dsub.add_parser("correct", help="记录作者确认的笔误更正并重写该天归档")
+    dc.add_argument("date", help="YYYY-MM-DD")
+    dc.add_argument("frm", metavar="原文", help="日报里实际写的字样")
+    dc.add_argument("to", metavar="改为", help="更正后的字样（留空表示删除该字样）")
+    dc.set_defaults(func=cmd_daily_correct)
 
     w = sub.add_parser("weekly", help="周报生成")
     wsub = w.add_subparsers(dest="subcommand", metavar="<子命令>")

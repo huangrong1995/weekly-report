@@ -27,6 +27,9 @@ DATA_DIR = os.path.join(REPO_ROOT, "data")
 ENTRIES_PATH = os.path.join(DATA_DIR, "entries.json")
 INDEX_PATH = os.path.join(DATA_DIR, "index.json")
 CONFIG_PATH = os.path.join(DATA_DIR, "config.json")
+# Authorised typo fixes, keyed by date: {"2026-10-26": [["清楚", "清除"]]}. Kept apart from
+# raw_text on purpose -- the verbatim appendix must stay exactly as sent.
+CORRECTIONS_PATH = os.path.join(DATA_DIR, "corrections.json")
 
 
 def _read_json(path: str, default):
@@ -111,3 +114,13 @@ def rebuild_index(entries: List[Entry]) -> Dict:
 
 def load_index() -> Dict:
     return _read_json(INDEX_PATH, {"version": 1, "weeks": {}, "entry_count": 0})
+
+
+def load_corrections() -> Dict[str, list]:
+    """date -> [[from, to], ...]. A missing file simply means no corrections."""
+    data = _read_json(CORRECTIONS_PATH, {})
+    return data if isinstance(data, dict) else {}
+
+
+def save_corrections(payload: Dict[str, list]) -> None:
+    _write_json(CORRECTIONS_PATH, payload)
