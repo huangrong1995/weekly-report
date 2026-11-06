@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import fixtures  # noqa: E402
-from wreport import models, parser, weekly  # noqa: E402
+from wreport import cli, models, parser, weekly  # noqa: E402
 
 
 def week_entries():
@@ -129,6 +129,25 @@ class TestBuild(unittest.TestCase):
         b = weekly.build_weekly(week_entries(), "2026-W39", owner="测试")
         self.assertEqual(a, b)
         self.assertNotIn("生成时间", a)
+
+
+class TestExternalSourceAnnotation(unittest.TestCase):
+    """lint 对『无日报、但标注外部来源』的周报文件应豁免。"""
+
+    def _is_external(self, head: str) -> bool:
+        m = cli._ext_marker.search(head)
+        return m is not None
+
+    def test_marked_head_is_external(self):
+        self.assertTrue(self._is_external("> 数据来源：**飞书 wiki 周报档案**"))
+
+    def test_plain_weekly_head_is_not_external(self):
+        self.assertFalse(self._is_external("# 📋 本周工作周报 · 2026 W40\n> 数据来源：3 份日报（09/28、09/29、09/30）"))
+
+    def test_marker_must_live_in_the_head_region(self):
+        """标记出现在正文深处不算——那是正文内容，不是来源声明。"""
+        body_only = "# 📋 周报\n\n## 一、本周完成\n- 数据来源：飞书 wiki（正文）\n- 数据来源：飞书 wiki（正文）"
+        self.assertFalse(self._is_external(body_only[:600]))
 
 
 class TestTemplate(unittest.TestCase):

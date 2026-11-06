@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from typing import Dict, List, Optional
 
@@ -497,6 +498,9 @@ def cmd_sync(args) -> int:
     return 0
 
 
+_ext_marker = re.compile(r"^>\s*数据[来源]+[：:].*飞书 ?wiki", re.M)
+
+
 def cmd_lint(args) -> int:
     root = _root()
     entries = _load()
@@ -523,6 +527,14 @@ def cmd_lint(args) -> int:
                 continue
             wk = f[:-3]
             if not store.entries_for_week(entries, wk):
+                # A week may legitimately have no daily reports when its weekly is
+                # externally sourced (e.g. the team's authoritative wiki) and annotated
+                # as such. That annotation is the file itself saying "data came from
+                # elsewhere" -- trust it instead of flagging a false orphan.
+                with open(os.path.join(wkdir, f), encoding="utf-8") as fh:
+                    head = fh.read(600)
+                if _ext_marker.search(head):
+                    continue
                 problems.append("周报 %s 没有对应日报数据" % wk)
 
     if args.json:
