@@ -227,6 +227,29 @@ def _is_report_date(line: str) -> bool:
     return bool(_DATE_LINE_RE.match(line))
 
 
+def _is_report_date_title(line: str) -> bool:
+    """A date and a report-type word on one line: `2026-11-09 日报` / `日报 2026-11-09`.
+
+    Both directions are the same title block; only meaningful before any content (the
+    caller gates it on header_zone).
+
+    Peeling the known word off and re-using the strict date matcher beats a single combined
+    regex: there, the day component `\\d{1,2}` backtracks and "09 日报" gets read as
+    day "0" + the rest "9 日报", which silently fails.
+    """
+    s = line.strip()
+    for word in _TITLE_WORDS:
+        if s.endswith(word):
+            prefix = s[:-len(word)].strip(" \t:：")
+            if prefix and _is_report_date(prefix):
+                return True
+        if s.startswith(word):
+            suffix = s[len(word):].strip(" \t:：")
+            if suffix and _is_report_date(suffix):
+                return True
+    return False
+
+
 def _looks_like_project_label(line: str, next_line: str) -> bool:
     """A bare, short line that introduces bulleted items is a project grouping label.
 
@@ -310,7 +333,8 @@ def parse_report(text: str, date: Optional[str] = None, source: str = "manual",
 
         # --- bare line: a project label, or prose -----------------------------
         if top is None and sub is None:
-            if header_zone and (_is_report_title(line) or _is_report_date(line)):
+            if header_zone and (_is_report_title(line) or _is_report_date(line)
+                                or _is_report_date_title(line)):
                 continue  # the verbatim appendix still carries this line
             header_zone = False
             if _looks_like_project_label(line, nxt):

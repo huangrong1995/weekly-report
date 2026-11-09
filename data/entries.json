@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-26T17:12:35",
+  "updated_at": "2026-11-09T18:08:14",
   "entries": [
     {
       "date": "2026-09-21",
@@ -443,6 +443,40 @@
       },
       "source": "feishu",
       "archived_at": "2026-10-26T17:07:09"
+    },
+    {
+      "date": "2026-11-09",
+      "week": "2026-W46",
+      "raw_text": "2026-11-09 日报\n1. N910 Pro UPTS认证版本固件导入FM17660K支持（完成）\n2. S90 磁卡问题定位中\n",
+      "items": [
+        {
+          "text": "N910 Pro UPTS认证版本固件导入FM17660K支持",
+          "status": "done",
+          "raw_status": "完成",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": false,
+          "order": 1
+        },
+        {
+          "text": "S90 磁卡问题定位中",
+          "status": "doing",
+          "raw_status": "",
+          "level": 0,
+          "project": "",
+          "section": "",
+          "is_group": false,
+          "order": 2
+        }
+      ],
+      "sections": {
+        "done": [],
+        "todo": [],
+        "notes": []
+      },
+      "source": "feishu",
+      "archived_at": "2026-11-09T18:08:14"
     }
   ]
 }

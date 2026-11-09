@@ -267,6 +267,19 @@ class TestReportTitle(unittest.TestCase):
             e = parser.parse_report("%s\n1. 甲事项\n" % head, date="2026-10-26")
             self.assertEqual([], [v for v in e.sections.values() if v], head)
 
+    def test_date_and_title_on_one_line(self):
+        """`2026-11-09 日报` 整体是标题，不能变成名为「2026-11-09 日报」的分组。"""
+        for head in ("2026-11-09 日报", "2026-11-09日报", "日报 2026-11-09",
+                     "2026年11月9日 工作日报"):
+            e = parser.parse_report("%s\n1. 甲事项\n2. 乙事项\n" % head, date="2026-11-09")
+            self.assertEqual([], [i.text for i in e.items if i.is_group], head)
+            self.assertEqual(2, len(e.items), head)
+
+    def test_date_title_line_after_content_is_content(self):
+        """标题块已关闭后，同样的行要按内容处理（当成项目标签），不能被吞掉。"""
+        e = parser.parse_report("1. 甲事项\n2026-11-09 日报\n1. 乙事项\n", date="2026-11-09")
+        self.assertEqual(["2026-11-09 日报"], [i.text for i in e.items if i.is_group])
+
     def test_title_and_date_together_are_both_consumed(self):
         e = parser.parse_report("日报\n2026-10-26\n今日完成\n1. 甲事项\n", date="2026-10-26")
         self.assertEqual([], [v for v in e.sections.values() if v])
